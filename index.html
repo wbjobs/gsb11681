@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>剪贴板图片格式转换器</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>剪贴板图片格式转换器</h1>
+  <p class="subtitle">粘贴剪贴板中的图片，识别格式并转换为 PNG / JPEG / WebP</p>
+</header>
+
+<main>
+  <!-- 能力检测 -->
+  <section id="support-panel" class="panel">
+    <h2>浏览器能力检测</h2>
+    <ul id="support-list" class="support-list"></ul>
+  </section>
+
+  <!-- 粘贴区 -->
+  <section class="panel">
+    <div id="drop-zone" class="drop-zone" tabindex="0">
+      <p class="drop-hint">按 <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴图片，或</p>
+      <button id="read-clipboard-btn" type="button">读取剪贴板</button>
+      <p class="drop-sub">也可以将图片文件拖拽到此处</p>
+      <input id="file-input" type="file" accept="image/*,.svg" hidden>
+    </div>
+    <p id="status-msg" class="status" role="status"></p>
+  </section>
+
+  <!-- 转换控制 -->
+  <section id="convert-panel" class="panel hidden">
+    <h2>转换设置</h2>
+    <div class="controls">
+      <label>目标格式
+        <select id="target-format">
+          <option value="image/png">PNG（保留透明）</option>
+          <option value="image/jpeg">JPEG（不透明）</option>
+          <option value="image/webp">WebP（保留透明）</option>
+        </select>
+      </label>
+      <label id="quality-wrap" class="hidden">质量
+        <input id="quality" type="range" min="0.1" max="1" step="0.05" value="0.92">
+        <span id="quality-val">0.92</span>
+      </label>
+      <label id="bg-wrap" class="hidden">JPEG 背景色
+        <input id="bg-color" type="color" value="#ffffff">
+      </label>
+      <label>最大边长
+        <select id="max-dim">
+          <option value="0">不缩放</option>
+          <option value="4096">4096 px</option>
+          <option value="2048" selected>2048 px</option>
+          <option value="1024">1024 px</option>
+        </select>
+      </label>
+      <button id="convert-btn" type="button">开始转换</button>
+      <button id="retry-btn" type="button" class="hidden">重试</button>
+    </div>
+  </section>
+
+  <!-- 对比展示 -->
+  <section id="compare-panel" class="panel hidden">
+    <h2>转换结果</h2>
+    <div class="compare">
+      <div class="card">
+        <h3>原始图片</h3>
+        <div class="preview checker"><img id="src-preview" alt="原始图片预览"></div>
+        <dl id="src-meta" class="meta"></dl>
+      </div>
+      <div class="arrow">→</div>
+      <div class="card">
+        <h3>转换结果</h3>
+        <div class="preview checker"><img id="dst-preview" alt="转换结果预览"></div>
+        <dl id="dst-meta" class="meta"></dl>
+        <button id="export-btn" type="button">导出图片</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 历史记录 -->
+  <section id="history-panel" class="panel">
+    <h2>历史记录 <button id="clear-history-btn" type="button" class="link-btn">清空</button></h2>
+    <ul id="history-list" class="history-list"><li class="empty">暂无记录</li></ul>
+  </section>
+</main>
+
+<script src="js/format-detect.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
