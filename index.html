@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>剪贴板图片转换器</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <header class="app-header">
+    <div class="app-title">
+      <span class="logo" aria-hidden="true">📋</span>
+      <div>
+        <h1>剪贴板图片转换器</h1>
+        <p class="subtitle">读取剪贴板图片 · 识别格式与透明通道 · 转换 · 导出（纯原生 Web API）</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button id="btn-paste" class="btn btn-primary" type="button">
+        <span class="btn-icon">⇪</span> 读取剪贴板图片
+      </button>
+      <button id="btn-pick" class="btn btn-ghost" type="button" title="剪贴板不可用时可用文件代替">
+        选择文件…
+      </button>
+      <input id="file-input" type="file" accept="image/*" hidden />
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- 源图片 -->
+    <section class="card" id="source-card" aria-labelledby="source-title">
+      <div class="card-head">
+        <h2 id="source-title">源图片</h2>
+        <span id="source-badge" class="badge badge-muted">等待读取</span>
+      </div>
+
+      <div id="source-empty" class="empty-state">
+        <div class="empty-icon">🖼️</div>
+        <p>按 <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>V</kbd>，或点击右上角「读取剪贴板图片」</p>
+        <p class="empty-hint">支持 PNG / JPEG / WebP / GIF / BMP / SVG；也可选择文件作为替代来源</p>
+      </div>
+
+      <div id="source-body" class="card-body" hidden>
+        <div class="preview-wrap">
+          <div id="source-preview" class="preview preview-checker"></div>
+        </div>
+        <dl class="meta-grid">
+          <div><dt>格式</dt><dd id="m-format">—</dd></div>
+          <div><dt>尺寸</dt><dd id="m-size">—</dd></div>
+          <div><dt>透明通道</dt><dd id="m-alpha">—</dd></div>
+          <div><dt>动画</dt><dd id="m-animated">—</dd></div>
+          <div><dt>文件大小</dt><dd id="m-bytes">—</dd></div>
+          <div><dt>来源</dt><dd id="m-origin">—</dd></div>
+        </dl>
+
+        <div class="convert-bar">
+          <label class="format-label" for="out-format">转换为</label>
+          <select id="out-format">
+            <option value="image/png">PNG（无损，保留透明）</option>
+            <option value="image/jpeg">JPEG（体积小，不透明）</option>
+            <option value="image/webp">WebP（高效，可透明）</option>
+          </select>
+          <div class="quality-row" id="quality-row" hidden>
+            <label for="out-quality">质量</label>
+            <input type="range" id="out-quality" min="0.3" max="1" step="0.05" value="0.92" />
+            <span id="quality-val">0.92</span>
+          </div>
+          <button id="btn-convert" class="btn btn-primary" type="button">开始转换</button>
+        </div>
+
+        <div id="source-warning" class="notice notice-warn" hidden></div>
+      </div>
+    </section>
+
+    <!-- 转换结果 -->
+    <section class="card" id="result-card" aria-labelledby="result-title">
+      <div class="card-head">
+        <h2 id="result-title">转换结果</h2>
+        <span id="result-badge" class="badge badge-muted">—</span>
+      </div>
+
+      <div id="result-empty" class="empty-state">
+        <div class="empty-icon">⚙️</div>
+        <p>转换后的图片、体积对比与耗时会显示在这里</p>
+      </div>
+
+      <div id="result-body" class="card-body" hidden>
+        <div class="preview-wrap">
+          <div id="result-preview" class="preview preview-checker"></div>
+        </div>
+        <dl class="meta-grid">
+          <div><dt>格式</dt><dd id="r-format">—</dd></div>
+          <div><dt>尺寸</dt><dd id="r-size">—</dd></div>
+          <div><dt>透明通道</dt><dd id="r-alpha">—</dd></div>
+          <div><dt>文件大小</dt><dd id="r-bytes">—</dd></div>
+          <div><dt>耗时</dt><dd id="r-elapsed">—</dd></div>
+          <div><dt>体积变化</dt><dd id="r-delta">—</dd></div>
+        </dl>
+
+        <div class="result-actions">
+          <button id="btn-export" class="btn btn-primary" type="button">⬇ 导出图片</button>
+          <button id="btn-retry" class="btn btn-ghost" type="button">↻ 重新转换</button>
+          <a id="btn-open-blob" class="btn btn-ghost" hidden target="_blank" rel="noopener">新窗口查看</a>
+        </div>
+      </div>
+
+      <div id="result-progress" class="progress" hidden>
+        <div class="spinner" aria-hidden="true"></div>
+        <span id="progress-text">正在转换…</span>
+      </div>
+
+      <div id="result-error" class="notice notice-error" hidden>
+        <p id="error-text"></p>
+        <div class="error-actions">
+          <button id="btn-retry-error" class="btn btn-warn" type="button">↻ 重试</button>
+          <button id="btn-fallback" class="btn btn-ghost" type="button">使用主线程模式重试</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <section class="card history-card" aria-labelledby="history-title">
+    <div class="card-head">
+      <h2 id="history-title">历史记录（IndexedDB 持久化）</h2>
+      <button id="btn-clear-history" class="btn btn-ghost btn-sm" type="button">清空</button>
+    </div>
+    <ul id="history-list" class="history-list">
+      <li class="history-empty">暂无记录，最近的源图片与转换结果会保存在本地</li>
+    </ul>
+  </section>
+
+  <!-- 全局状态提示 -->
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
